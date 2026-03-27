@@ -17,7 +17,7 @@
     #briefings-list { display: flex; flex-direction: column; gap: 12px; }
     .briefing-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px 24px; text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
     .briefing-card:hover { border-color: #58a6ff; background: #1c2128; transform: translateY(-1px); }
-    .briefing-card:first-child { border-color: #1f6feb; background: #161b22; position: relative; overflow: hidden; }
+    .briefing-card:first-child { border-color: #1f6feb; position: relative; overflow: hidden; }
     .briefing-card:first-child::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, #58a6ff, #1f6feb); border-radius: 10px 0 0 10px; }
     .card-left { display: flex; align-items: center; gap: 16px; }
     .card-icon { width: 40px; height: 40px; background: #21262d; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
@@ -27,72 +27,79 @@
     .latest-tag { background: #1f6feb; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
     .card-arrow { color: #30363d; font-size: 1.2rem; transition: color 0.2s; }
     .briefing-card:hover .card-arrow { color: #58a6ff; }
-    .loading { text-align: center; color: #8b949e; padding: 48px 0; font-size: 0.95rem; }
+    .loading { text-align: center; color: #8b949e; padding: 48px 0; }
     .loading-spinner { width: 28px; height: 28px; border: 3px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .empty-state { text-align: center; color: #8b949e; padding: 48px 0; }
-    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
     footer { text-align: center; padding: 32px 24px; color: #484f58; font-size: 0.8rem; border-top: 1px solid #21262d; margin-top: 60px; }
     footer a { color: #58a6ff; text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
 <header>
-  <div class="header-icon">🤖</div>
+  <div class="header-icon">&#x1F916;</div>
   <h1>AI Daily News</h1>
   <p>Daily briefings on model releases, trending tools, and government AI policy</p>
-  <span class="badge">⚡ Updated every day at noon</span>
+  <span class="badge">&#x26A1; Updated every day at noon</span>
 </header>
 <main>
   <div class="section-title">Briefing Archive</div>
   <div id="briefings-list">
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      Loading briefings...
-    </div>
+    <div class="loading"><div class="loading-spinner"></div>Loading briefings...</div>
   </div>
 </main>
 <footer>
-  Powered by <a href="https://github.com/outthewoodnow/ai-daily-news" target="_blank">outthewoodnow/ai-daily-news</a> &nbsp;·&nbsp; Built with Claude AI
+  Powered by <a href="https://github.com/outthewoodnow/ai-daily-news" target="_blank">outthewoodnow/ai-daily-news</a> &nbsp;&middot;&nbsp; Built with Claude AI
 </footer>
 <script>
-  const OWNER = 'outthewoodnow';
-  const REPO = 'ai-daily-news';
-  const FOLDER = 'briefings';
-  function formatDate(filename) {
-    const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
-    if (!match) return filename;
-    const [year, month, day] = match[1].split('-');
-    const date = new Date(year+'-'+month+'-'+day+'T12:00:00');
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  }
-  function getFileUrl(filename) {
-    const base = filename.replace('.md', '');
-    return 'https://'+OWNER+'.github.io/'+REPO+'/'+FOLDER+'/'+base;
-  }
-  async function loadBriefings() {
-    const container = document.getElementById('briefings-list');
-    try {
-      const res = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+FOLDER);
-      if (!res.ok) throw new Error('Failed');
-      const files = await res.json();
-      const mdFiles = files.filter(f => f.name.endsWith('.md')).sort((a,b) => b.name.localeCompare(a.name));
-      if (mdFiles.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No briefings yet — check back at noon!</p></div>';
-        return;
-      }
-      container.innerHTML = mdFiles.map((file, i) => {
-        const dateStr = formatDate(file.name);
-        const url = getFileUrl(file.name);
-        const isLatest = i === 0;
-        return '<a class="briefing-card" href="'+url+'" target="_blank"><div class="card-left"><div class="card-icon">'+(isLatest?'🗞️':'📄')+'</div><div><div class="card-title">AI Briefing '+(isLatest?'<span class="latest-tag">LATEST</span>':'')+'</div><div class="card-date">'+dateStr+'</div></div></div><span class="card-arrow">›</span></a>';
-      }).join('');
-    } catch(e) {
-      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Couldn't load briefings. <a href="https://github.com/'+OWNER+'/'+REPO+'/tree/main/'+FOLDER+'" target="_blank" style="color:#58a6ff">View on GitHub</a></p></div>';
+function formatDate(filename) {
+  var parts = filename.replace('.md', '').split('_');
+  var datePart = parts[parts.length - 1];
+  var dateParts = datePart.split('-');
+  if (dateParts.length !== 3) return filename;
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var year = dateParts[0];
+  var month = months[parseInt(dateParts[1], 10) - 1];
+  var day = parseInt(dateParts[2], 10);
+  var d = new Date(year + '-' + dateParts[1] + '-' + dateParts[2] + 'T12:00:00');
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return days[d.getDay()] + ', ' + month + ' ' + day + ', ' + year;
+}
+function getFileUrl(filename) {
+  return 'https://github.com/outthewoodnow/ai-daily-news/blob/main/briefings/' + filename;
+}
+async function loadBriefings() {
+  var container = document.getElementById('briefings-list');
+  try {
+    var res = await fetch('https://api.github.com/repos/outthewoodnow/ai-daily-news/contents/briefings');
+    if (!res.ok) throw new Error('Failed');
+    var files = await res.json();
+    var mdFiles = files.filter(function(f) { return f.name.endsWith('.md'); });
+    mdFiles.sort(function(a, b) { return b.name.localeCompare(a.name); });
+    if (mdFiles.length === 0) {
+      container.innerHTML = '<div class="empty-state"><p>&#x1F4ED; No briefings yet &#8212; check back at noon!</p></div>';
+      return;
     }
+    var html = '';
+    for (var i = 0; i < mdFiles.length; i++) {
+      var file = mdFiles[i];
+      var dateStr = formatDate(file.name);
+      var url = getFileUrl(file.name);
+      var isLatest = i === 0;
+      var icon = isLatest ? '&#x1F5DE;&#xFE0F;' : '&#x1F4C4;';
+      var tag = isLatest ? '<span class="latest-tag">LATEST</span>' : '';
+      html += '<a class="briefing-card" href="' + url + '" target="_blank">';
+      html += '<div class="card-left"><div class="card-icon">' + icon + '</div>';
+      html += '<div><div class="card-title">AI Briefing ' + tag + '</div>';
+      html += '<div class="card-date">' + dateStr + '</div></div></div>';
+      html += '<span class="card-arrow">&#8250;</span></a>';
+    }
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="empty-state"><p>Could not load briefings. <a href="https://github.com/outthewoodnow/ai-daily-news/tree/main/briefings" target="_blank" style="color:#58a6ff">View on GitHub</a></p></div>';
   }
-  loadBriefings();
+}
+loadBriefings();
 </script>
 </body>
 </html>
