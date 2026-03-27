@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Daily News</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+    header { background: linear-gradient(135deg, #161b22 0%, #0d1117 100%); border-bottom: 1px solid #30363d; padding: 40px 24px 32px; text-align: center; }
+    .header-icon { font-size: 48px; margin-bottom: 12px; }
+    header h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(90deg, #58a6ff, #79c0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+    header p { color: #8b949e; font-size: 1rem; max-width: 500px; margin: 0 auto 16px; }
+    .badge { display: inline-block; background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: #58a6ff; }
+    main { max-width: 800px; margin: 40px auto; padding: 0 24px; }
+    .section-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #8b949e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #21262d; }
+    #briefings-list { display: flex; flex-direction: column; gap: 12px; }
+    .briefing-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px 24px; text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, background 0.2s, transform 0.15s; }
+    .briefing-card:hover { border-color: #58a6ff; background: #1c2128; transform: translateY(-1px); }
+    .briefing-card:first-child { border-color: #1f6feb; background: #161b22; position: relative; overflow: hidden; }
+    .briefing-card:first-child::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, #58a6ff, #1f6feb); border-radius: 10px 0 0 10px; }
+    .card-left { display: flex; align-items: center; gap: 16px; }
+    .card-icon { width: 40px; height: 40px; background: #21262d; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .briefing-card:first-child .card-icon { background: #1f3a5f; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #e6edf3; margin-bottom: 3px; }
+    .card-date { font-size: 0.82rem; color: #8b949e; }
+    .latest-tag { background: #1f6feb; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+    .card-arrow { color: #30363d; font-size: 1.2rem; transition: color 0.2s; }
+    .briefing-card:hover .card-arrow { color: #58a6ff; }
+    .loading { text-align: center; color: #8b949e; padding: 48px 0; font-size: 0.95rem; }
+    .loading-spinner { width: 28px; height: 28px; border: 3px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; color: #8b949e; padding: 48px 0; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    footer { text-align: center; padding: 32px 24px; color: #484f58; font-size: 0.8rem; border-top: 1px solid #21262d; margin-top: 60px; }
+    footer a { color: #58a6ff; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-icon">🤖</div>
+  <h1>AI Daily News</h1>
+  <p>Daily briefings on model releases, trending tools, and government AI policy</p>
+  <span class="badge">⚡ Updated every day at noon</span>
+</header>
+<main>
+  <div class="section-title">Briefing Archive</div>
+  <div id="briefings-list">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      Loading briefings...
+    </div>
+  </div>
+</main>
+<footer>
+  Powered by <a href="https://github.com/outthewoodnow/ai-daily-news" target="_blank">outthewoodnow/ai-daily-news</a> &nbsp;·&nbsp; Built with Claude AI
+</footer>
+<script>
+  const OWNER = 'outthewoodnow';
+  const REPO = 'ai-daily-news';
+  const FOLDER = 'briefings';
+  function formatDate(filename) {
+    const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
+    if (!match) return filename;
+    const [year, month, day] = match[1].split('-');
+    const date = new Date(year+'-'+month+'-'+day+'T12:00:00');
+    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  function getFileUrl(filename) {
+    const base = filename.replace('.md', '');
+    return 'https://'+OWNER+'.github.io/'+REPO+'/'+FOLDER+'/'+base;
+  }
+  async function loadBriefings() {
+    const container = document.getElementById('briefings-list');
+    try {
+      const res = await fetch('https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+FOLDER);
+      if (!res.ok) throw new Error('Failed');
+      const files = await res.json();
+      const mdFiles = files.filter(f => f.name.endsWith('.md')).sort((a,b) => b.name.localeCompare(a.name));
+      if (mdFiles.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No briefings yet — check back at noon!</p></div>';
+        return;
+      }
+      container.innerHTML = mdFiles.map((file, i) => {
+        const dateStr = formatDate(file.name);
+        const url = getFileUrl(file.name);
+        const isLatest = i === 0;
+        return '<a class="briefing-card" href="'+url+'" target="_blank"><div class="card-left"><div class="card-icon">'+(isLatest?'🗞️':'📄')+'</div><div><div class="card-title">AI Briefing '+(isLatest?'<span class="latest-tag">LATEST</span>':'')+'</div><div class="card-date">'+dateStr+'</div></div></div><span class="card-arrow">›</span></a>';
+      }).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Couldn't load briefings. <a href="https://github.com/'+OWNER+'/'+REPO+'/tree/main/'+FOLDER+'" target="_blank" style="color:#58a6ff">View on GitHub</a></p></div>';
+    }
+  }
+  loadBriefings();
+</script>
+</body>
+</html>
